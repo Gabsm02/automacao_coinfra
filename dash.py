@@ -236,15 +236,15 @@ st.download_button(
 # BUSCA POR SITE_CENTRAL - HISTÓRICO COMPLETO DO SITE
 # ==========================================================
  
-st.header("🔎 Buscar histórico por Site Central")
+st.header("🔎 Buscar histórico por Site")
 st.caption(
     "Essa busca considera TODOS os registros do banco, independentemente "
     "dos filtros da barra lateral."
 )
  
 termo_busca = st.text_input(
-    "Digite o nome (ou parte do nome) do Site Central",
-    placeholder="Ex: PALAME",
+    "Digite o nome (ou parte do nome) do Site",
+    placeholder="Ex: BATQO",
 )
  
 if termo_busca:
@@ -252,7 +252,7 @@ if termo_busca:
         st.error("A coluna 'Site_Central' não foi encontrada na tabela.")
     else:
         mascara = (
-            df["Site_Central"]
+            df["Histórico Site"]
             .astype(str)
             .str.upper()
             .str.contains(termo_busca.strip().upper(), na=False)
@@ -276,23 +276,6 @@ if termo_busca:
  
             st.dataframe(historico_site, use_container_width=True)
  
-            # Gráfico de evolução do site ao longo das execuções, se houver data
-            if (
-                "data_execucao" in historico_site.columns
-                and historico_site["data_execucao"].notna().any()
-            ):
-                evolucao_site = (
-                    historico_site.groupby(historico_site["data_execucao"].dt.date)
-                    .size()
-                    .reset_index(name="Quantidade")
-                )
-                evolucao_site.columns = ["Data", "Quantidade"]
-                fig_site = px.line(
-                    evolucao_site, x="Data", y="Quantidade", markers=True,
-                    title=f"Evolução de registros - {termo_busca}",
-                )
-                st.plotly_chart(fig_site, use_container_width=True)
- 
             csv_site = historico_site.to_csv(index=False).encode("utf-8-sig")
             st.download_button(
                 "⬇️ Baixar histórico deste site (CSV)",
@@ -304,13 +287,13 @@ else:
     st.info("Digite um nome de site acima para ver o histórico completo dele.")
  
 st.divider()
-st.subheader("📋 Dados detalhados")
+st.subheader("📋 Histórico por Site")
 st.dataframe(df_filtrado, use_container_width=True)
  
-csv = df_filtrado.to_csv(index=False).encode("utf-8-sig")
-st.download_button(
-    "⬇️ Baixar dados filtrados (CSV)",
-    data=csv,
-    file_name="historico_tas_infra_filtrado.csv",
-    mime="text/csv",
-)
+# csv = df_filtrado.to_csv(index=False).encode("utf-8-sig")
+# st.download_button(
+#     "⬇️ Baixar dados filtrados (CSV)",
+#     data=csv,
+#     file_name="historico_tas_infra_filtrado.csv",
+#     mime="text/csv",
+# )
