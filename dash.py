@@ -169,6 +169,60 @@ if "data_execucao" in df_filtrado.columns and df_filtrado["data_execucao"].notna
 
 st.divider()
 
+# ==========================================================
+# BUSCA POR SITE_CENTRAL - HISTÓRICO COMPLETO DO SITE
+# ==========================================================
+ 
+st.header("🔎 Buscar histórico por Site")
+st.caption(
+    "Essa busca considera TODOS os registros do banco, independentemente "
+    "dos filtros da barra lateral."
+)
+ 
+termo_busca = st.text_input(
+    "Digite o nome do Site",
+    placeholder="Ex: TQO",
+)
+ 
+if termo_busca:
+    if "Site_Central" not in df.columns:
+        st.error("A coluna 'Site_Central' não foi encontrada na tabela.")
+    else:
+        mascara = (
+            df["Site_Central"]
+            .astype(str)
+            .str.upper()
+            .str.contains(termo_busca.strip().upper(), na=False)
+        )
+        historico_site = df[mascara].copy()
+ 
+        if historico_site.empty:
+            st.warning(f"Nenhum registro encontrado para '{termo_busca}'.")
+        else:
+            # Ordena do mais recente para o mais antigo, se houver data de execução
+            if "data_execucao" in historico_site.columns:
+                historico_site = historico_site.sort_values(
+                    "data_execucao", ascending=False
+                )
+ 
+            sites_encontrados = historico_site["Site_Central"].unique()
+            st.success(
+                f"{len(historico_site)} registro(s) encontrado(s) para "
+                f"{len(sites_encontrados)} site(s): {', '.join(map(str, sites_encontrados))}"
+            )
+ 
+            st.dataframe(historico_site, use_container_width=True)
+ 
+            csv_site = historico_site.to_csv(index=False).encode("utf-8-sig")
+            st.download_button(
+                "⬇️ Baixar histórico deste site (CSV)",
+                data=csv_site,
+                file_name=f"historico_{termo_busca.strip()}.csv",
+                mime="text/csv",
+            )
+else:
+    st.info("Digite um nome de site acima para ver o histórico completo dele.")
+ 
 
 # ==========================================================
 # GRÁFICOS
@@ -232,57 +286,3 @@ st.download_button(
     mime="text/csv",
 )
 
-# ==========================================================
-# BUSCA POR SITE_CENTRAL - HISTÓRICO COMPLETO DO SITE
-# ==========================================================
- 
-st.header("🔎 Buscar histórico por Site")
-st.caption(
-    "Essa busca considera TODOS os registros do banco, independentemente "
-    "dos filtros da barra lateral."
-)
- 
-termo_busca = st.text_input(
-    "Digite o nome do Site",
-    placeholder="Ex: TQO",
-)
- 
-if termo_busca:
-    if "Site_Central" not in df.columns:
-        st.error("A coluna 'Site_Central' não foi encontrada na tabela.")
-    else:
-        mascara = (
-            df["Site_Central"]
-            .astype(str)
-            .str.upper()
-            .str.contains(termo_busca.strip().upper(), na=False)
-        )
-        historico_site = df[mascara].copy()
- 
-        if historico_site.empty:
-            st.warning(f"Nenhum registro encontrado para '{termo_busca}'.")
-        else:
-            # Ordena do mais recente para o mais antigo, se houver data de execução
-            if "data_execucao" in historico_site.columns:
-                historico_site = historico_site.sort_values(
-                    "data_execucao", ascending=False
-                )
- 
-            sites_encontrados = historico_site["Site_Central"].unique()
-            st.success(
-                f"{len(historico_site)} registro(s) encontrado(s) para "
-                f"{len(sites_encontrados)} site(s): {', '.join(map(str, sites_encontrados))}"
-            )
- 
-            st.dataframe(historico_site, use_container_width=True)
- 
-            csv_site = historico_site.to_csv(index=False).encode("utf-8-sig")
-            st.download_button(
-                "⬇️ Baixar histórico deste site (CSV)",
-                data=csv_site,
-                file_name=f"historico_{termo_busca.strip()}.csv",
-                mime="text/csv",
-            )
-else:
-    st.info("Digite um nome de site acima para ver o histórico completo dele.")
- 
