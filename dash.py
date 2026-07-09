@@ -243,8 +243,8 @@ st.caption(
 )
  
 termo_busca = st.text_input(
-    "Digite o nome (ou parte do nome) do Site",
-    placeholder="Ex: BATQO",
+    "Digite o nome do Site",
+    placeholder="Ex: TQO",
 )
  
 if termo_busca:
@@ -252,7 +252,7 @@ if termo_busca:
         st.error("A coluna 'Site_Central' não foi encontrada na tabela.")
     else:
         mascara = (
-            df["Histórico Site"]
+            df["Site_Central"]
             .astype(str)
             .str.upper()
             .str.contains(termo_busca.strip().upper(), na=False)
@@ -286,14 +286,3 @@ if termo_busca:
 else:
     st.info("Digite um nome de site acima para ver o histórico completo dele.")
  
-st.divider()
-st.subheader("📋 Histórico por Site")
-st.dataframe(df_filtrado, use_container_width=True)
- 
-# csv = df_filtrado.to_csv(index=False).encode("utf-8-sig")
-# st.download_button(
-#     "⬇️ Baixar dados filtrados (CSV)",
-#     data=csv,
-#     file_name="historico_tas_infra_filtrado.csv",
-#     mime="text/csv",
-# )
