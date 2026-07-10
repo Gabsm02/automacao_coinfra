@@ -155,11 +155,11 @@ if municipios_selecionados:
 # CABEÇALHO E MÉTRICAS
 # ==========================================================
 
-st.title("📊 Dashboard Coinfra - Histórico TAS Infra")
+st.title("📊 Dashboard Histórico TAS Infra")
 st.caption(f"Última atualização dos dados: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("Total de registros (filtrados)", len(df_filtrado))
+col1.metric("Total de registros", len(df_filtrado))
 if "Município" in df_filtrado.columns:
     col2.metric("Municípios distintos", df_filtrado["Município"].nunique())
 if "DDD" in df_filtrado.columns:
@@ -174,11 +174,7 @@ st.divider()
 # ==========================================================
  
 st.header("🔎 Buscar histórico por Site")
-st.caption(
-    "Essa busca considera TODOS os registros do banco, independentemente "
-    "dos filtros da barra lateral."
-)
- 
+
 termo_busca = st.text_input(
     "Digite o nome do Site",
     placeholder="Ex: TQO",
