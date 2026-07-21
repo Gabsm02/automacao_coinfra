@@ -5,6 +5,9 @@ import sys
 from datetime import datetime
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
+from openpyxl import load_workbook
+from openpyxl.worksheet.table import Table, TableStyleInfo
+from openpyxl.utils import get_column_letter
 
 # ==========================================================
 # CONFIGURAÇÕES - lidas do arquivo .env (não versionado)
@@ -177,6 +180,36 @@ def enviar_para_mariadb(df):
         raise
     finally:
         engine.dispose()
+    
+def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
+    wb = load_workbook(caminho)
+    ws = wb.active
+
+    max_linha = ws.max_row
+    max_coluna = ws.max_column
+    ultima_coluna = get_column_letter(max_coluna)
+    intervalo = f"A1:{ultima_coluna}{max_linha}"
+
+    nome_tabela_valido = "".join(c if c.isalnum() or c == "_" else "_" for c in nome_tabela)
+    if not nome_tabela_valido or not nome_tabela_valido[0].isalpha():
+        nome_tabela_valido = f"T_{nome_tabela_valido}"
+
+    tabela = Table(displayName=nome_tabela_valido, ref=intervalo)
+    tabela.tableStyleInfo = TableStyleInfo(
+        name="TableStyleMedium9",
+        showFirstColumn=False,
+        showLastColumn=False,
+        showRowStripes=True,
+        showColumnStripes=False,
+    )
+    ws.add_table(tabela)
+
+    for coluna in ws.columns:
+        maior_valor = max((len(str(celula.value)) for celula in coluna if celula.value is not None), default=10)
+        ws.column_dimensions[coluna[0].column_letter].width = min(maior_valor + 2, 40)
+
+    wb.save(caminho)
+    
 
 
 def main():
@@ -226,6 +259,8 @@ def main():
     # Salva o resultado localmente
     df_principal.to_excel(CAMINHO_SAIDA, index=False)
     print(f"\n📄 Arquivo salvo em: {CAMINHO_SAIDA}")
+
+    salvar_como_tabela_excel(CAMINHO_SAIDA, nome_tabela="TabelaTASInfra")
 
     # Envia o resultado final para o MariaDB, criando histórico
     enviar_para_mariadb(df_principal)
