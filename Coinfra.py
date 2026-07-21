@@ -209,6 +209,33 @@ def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
         ws.column_dimensions[coluna[0].column_letter].width = min(maior_valor + 2, 40)
 
     wb.save(caminho)
+
+def ajustar_tipos_colunas(df):
+    df = df.copy()
+ 
+    for coluna in ("TA", "Raiz"):
+        if coluna in df.columns:
+            antes = df[coluna].notna().sum()
+            df[coluna] = pd.to_numeric(df[coluna], errors="coerce")
+            depois = df[coluna].notna().sum()
+            if depois < antes:
+                print(
+                    f"⚠️  {antes - depois} valor(es) da coluna '{coluna}' não "
+                    f"eram numéricos e viraram vazio. Verifique a planilha de origem."
+                )
+ 
+    if "Data Criação" in df.columns:
+        antes = df["Data Criação"].notna().sum()
+        df["Data Criação"] = pd.to_datetime(df["Data Criação"], errors="coerce")
+        depois = df["Data Criação"].notna().sum()
+        if depois < antes:
+            print(
+                f"⚠️  {antes - depois} valor(es) da coluna 'Data Criação' não "
+                f"eram datas válidas e viraram vazio. Verifique a planilha de origem."
+            )
+ 
+    return df
+
     
 
 
