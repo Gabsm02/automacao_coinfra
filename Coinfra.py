@@ -213,7 +213,7 @@ def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
  
     # Aplica o formato de exibição correto nas colunas TA, Raiz (número) e
     # Data Criação (data e hora), percorrendo o cabeçalho para achar a coluna certa
-    colunas_numero = {"TA", "Raiz"}
+    colunas_numero = {"TA", "Raiz", "Evento de impacto Total"}
     coluna_data = "Data Criação"
  
     cabecalhos = {celula.value: celula.column for celula in ws[1]}
@@ -242,7 +242,7 @@ def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
 def ajustar_tipos_colunas(df):
     df = df.copy()
  
-    for coluna in ("TA", "Raiz"):
+    for coluna in ("TA", "Raiz","Evento de impacto Total" ):
         if coluna in df.columns:
             antes = df[coluna].notna().sum()
             df[coluna] = pd.to_numeric(df[coluna], errors="coerce")
