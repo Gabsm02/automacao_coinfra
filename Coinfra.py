@@ -182,18 +182,25 @@ def enviar_para_mariadb(df):
         engine.dispose()
     
 def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
+    """
+    Abre o arquivo Excel já salvo e converte todo o intervalo de dados em uma
+    Tabela do Excel de verdade (com filtro automático, faixa de cores nas
+    linhas e nome de tabela) - o mesmo efeito de selecionar os dados no Excel
+    e clicar em "Formatar como Tabela".
+    """
     wb = load_workbook(caminho)
     ws = wb.active
-
+ 
     max_linha = ws.max_row
     max_coluna = ws.max_column
     ultima_coluna = get_column_letter(max_coluna)
     intervalo = f"A1:{ultima_coluna}{max_linha}"
-
+ 
+    # Garante um nome de tabela válido (sem espaços/caracteres especiais)
     nome_tabela_valido = "".join(c if c.isalnum() or c == "_" else "_" for c in nome_tabela)
     if not nome_tabela_valido or not nome_tabela_valido[0].isalpha():
         nome_tabela_valido = f"T_{nome_tabela_valido}"
-
+ 
     tabela = Table(displayName=nome_tabela_valido, ref=intervalo)
     tabela.tableStyleInfo = TableStyleInfo(
         name="TableStyleMedium9",
@@ -203,12 +210,34 @@ def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
         showColumnStripes=False,
     )
     ws.add_table(tabela)
-
+ 
+    # Aplica o formato de exibição correto nas colunas TA, Raiz (número) e
+    # Data Criação (data e hora), percorrendo o cabeçalho para achar a coluna certa
+    colunas_numero = {"TA", "Raiz"}
+    coluna_data = "Data Criação"
+ 
+    cabecalhos = {celula.value: celula.column for celula in ws[1]}
+ 
+    for nome_coluna in colunas_numero:
+        if nome_coluna in cabecalhos:
+            letra = get_column_letter(cabecalhos[nome_coluna])
+            for celula in ws[letra][1:]:  # pula o cabeçalho
+                celula.number_format = "0"
+ 
+    if coluna_data in cabecalhos:
+        letra = get_column_letter(cabecalhos[coluna_data])
+        for celula in ws[letra][1:]:  # pula o cabeçalho
+            celula.number_format = "DD/MM/YYYY HH:MM:SS"
+ 
+    # Ajusta a largura das colunas automaticamente, já que virou tabela
     for coluna in ws.columns:
         maior_valor = max((len(str(celula.value)) for celula in coluna if celula.value is not None), default=10)
         ws.column_dimensions[coluna[0].column_letter].width = min(maior_valor + 2, 40)
-
+ 
     wb.save(caminho)
+    print(f"📊 Intervalo de dados formatado como Tabela do Excel ('{nome_tabela_valido}').")
+ 
+
 
 def ajustar_tipos_colunas(df):
     df = df.copy()
@@ -282,6 +311,8 @@ def main():
 
     # Remove a coluna auxiliar de normalização antes de salvar
     df_principal = df_principal.drop(columns=["_municipio_norm"])
+
+    df_principal = ajustar_tipos_colunas(df_principal)
 
     # Salva o resultado localmente
     df_principal.to_excel(CAMINHO_SAIDA, index=False)
