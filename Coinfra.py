@@ -227,7 +227,7 @@ def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
     if coluna_data in cabecalhos:
         letra = get_column_letter(cabecalhos[coluna_data])
         for celula in ws[letra][1:]:  # pula o cabeçalho
-            celula.number_format = "DD/MM/YYYY HH:MM:SS"
+            celula.number_format = "DD/MM/YYYY"
  
     # Ajusta a largura das colunas automaticamente, já que virou tabela
     for coluna in ws.columns:
@@ -255,7 +255,7 @@ def ajustar_tipos_colunas(df):
  
     if "Data Criação" in df.columns:
         antes = df["Data Criação"].notna().sum()
-        df["Data Criação"] = pd.to_datetime(df["Data Criação"], errors="coerce")
+        df["Data Criação"] = pd.to_datetime(df["Data Criação"], errors="coerce").dt.normalize()
         depois = df["Data Criação"].notna().sum()
         if depois < antes:
             print(
