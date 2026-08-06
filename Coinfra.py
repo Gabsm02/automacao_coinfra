@@ -2,8 +2,6 @@ import pandas as pd
 import unicodedata
 import os
 import sys
-from datetime import datetime
-from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from openpyxl import load_workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
@@ -108,79 +106,6 @@ def filtrar_principal(df):
 
     return df_filtrado
 
-
-def enviar_para_mariadb(df):
-    """
-    Envia o DataFrame final para uma tabela no MariaDB, mantendo histórico:
-    - cada execução recebe uma coluna "data_execucao" com o timestamp do momento
-      em que o script rodou, para diferenciar cada carga no histórico
-    - os dados são ANEXADOS (if_exists="append"), nunca sobrescritos, para que
-      o histórico se acumule a cada execução
-    - se a tabela ainda não existir no banco, ela é criada automaticamente
-      na primeira execução, com as colunas do DataFrame
-    - se a tabela já existir mas não tiver a coluna "data_execucao" (ex: tabela
-      criada em uma versão anterior do script), a coluna é criada automaticamente
-    """
-    from sqlalchemy import text, inspect
-
-    df_para_banco = df.copy()
-
-    # A planilha de origem tem duas colunas chamadas "Tipo de Site". O pandas
-    # renomeia a segunda automaticamente para "Tipo de Site.1" para evitar nomes
-    # duplicados. Aqui ela é renomeada para "Tipo de Site2", que é o nome da
-    # coluna correspondente na tabela do MariaDB.
-    if "Tipo de Site.1" in df_para_banco.columns:
-        df_para_banco = df_para_banco.rename(columns={"Tipo de Site.1": "Tipo de Site2"})
-
-    # Remove colunas duplicadas que o pandas possa ter criado (ex: "Tipo de Site.1")
-    # e mantém só as colunas que realmente existem na tabela do banco.
-    colunas_existentes_no_df = [c for c in COLUNAS_PARA_BANCO if c in df_para_banco.columns]
-    colunas_faltando = [c for c in COLUNAS_PARA_BANCO if c not in df_para_banco.columns]
-    if colunas_faltando:
-        print(
-            f"⚠️  As colunas {colunas_faltando} estão em COLUNAS_PARA_BANCO mas não "
-            f"foram encontradas na planilha. Verifique os nomes."
-        )
-
-    df_para_banco = df_para_banco[colunas_existentes_no_df].copy()
-    df_para_banco["data_execucao"] = datetime.now()
-
-    # String de conexão no formato: mysql+pymysql://usuario:senha@host:porta/banco
-    string_conexao = (
-        f"mysql+pymysql://{DB_USER}:{DB_SENHA}@{DB_HOST}:{DB_PORT}/{DB_NOME}"
-    )
-
-    engine = create_engine(string_conexao)
-
-    try:
-        inspetor = inspect(engine)
-
-        # Se a tabela já existe mas não tem a coluna data_execucao, cria a coluna
-        if inspetor.has_table(DB_TABELA):
-            colunas_existentes = [c["name"] for c in inspetor.get_columns(DB_TABELA)]
-            if "data_execucao" not in colunas_existentes:
-                with engine.begin() as conexao:
-                    conexao.execute(
-                        text(f"ALTER TABLE `{DB_TABELA}` ADD COLUMN data_execucao DATETIME NULL")
-                    )
-                print(f"🛠️  Coluna 'data_execucao' criada na tabela '{DB_TABELA}'.")
-
-        df_para_banco.to_sql(
-            name=DB_TABELA,
-            con=engine,
-            if_exists="append",   # nunca apaga o que já existe, só acrescenta
-            index=False,
-        )
-        print(
-            f"🗄️  {len(df_para_banco)} registro(s) enviado(s) para a tabela "
-            f"'{DB_TABELA}' no MariaDB (data/hora: {df_para_banco['data_execucao'].iloc[0]})."
-        )
-    except Exception as erro:
-        print(f"❌ Erro ao enviar os dados para o MariaDB: {erro}")
-        raise
-    finally:
-        engine.dispose()
-    
 def salvar_como_tabela_excel(caminho, nome_tabela="TabelaPrincipal"):
     """
     Abre o arquivo Excel já salvo e converte todo o intervalo de dados em uma
@@ -319,9 +244,6 @@ def main():
     print(f"\n📄 Arquivo salvo em: {CAMINHO_SAIDA}")
 
     salvar_como_tabela_excel(CAMINHO_SAIDA, nome_tabela="TabelaTASInfra")
-
-    # Envia o resultado final para o MariaDB, criando histórico
-    enviar_para_mariadb(df_principal)
 
 
 if __name__ == "__main__":
